@@ -1,15 +1,15 @@
 package com.expense.expense_tracker.service;
 
+import com.expense.expense_tracker.Exception.ExpenseNotFoundException;
+import com.expense.expense_tracker.dto.ExpenseRequest;
+import com.expense.expense_tracker.dto.ExpenseResponse;
 import com.expense.expense_tracker.model.Expense;
 import com.expense.expense_tracker.model.User;
 import com.expense.expense_tracker.repository.ExpenseRepository;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class ExpenseService {
@@ -20,59 +20,96 @@ public class ExpenseService {
         this.expenseRepository = expenseRepository;
     }
 
-    public List<Expense> getAllExpenses(Long userId) {
+    private ExpenseResponse convertToResponse(Expense expense) {
 
-        return expenseRepository.findByUserId(userId);
+        return new ExpenseResponse(
+                expense.getId(),
+                expense.getTitle(),
+                expense.getAmount(),
+                expense.getCategory(),
+                expense.getDate(),
+                expense.getDescription()
+        );
     }
 
-    public Expense getExpenseById(Long id, Long userId) {
+    public List<ExpenseResponse> getAllExpenses(Long userId) {
 
-        return expenseRepository.findByIdAndUserId(id, userId)
+        return expenseRepository.findByUserId(userId)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    public ExpenseResponse getExpenseById(Long id, Long userId) {
+
+        Expense expense = expenseRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                NOT_FOUND,
-                                "Expense not found"
-                        )
+                        new ExpenseNotFoundException("Expense not found")
                 );
+
+        return convertToResponse(expense);
     }
 
-    public Expense createExpense(Expense expense, User user) {
+    public ExpenseResponse createExpense(
+            ExpenseRequest request,
+            User user) {
 
+        Expense expense = new Expense();
+
+        expense.setTitle(request.getTitle());
+        expense.setAmount(request.getAmount());
+        expense.setCategory(request.getCategory());
+        expense.setDate(request.getDate());
+        expense.setDescription(request.getDescription());
         expense.setUser(user);
 
-        return expenseRepository.save(expense);
+        Expense savedExpense = expenseRepository.save(expense);
+
+        return convertToResponse(savedExpense);
     }
 
-    public Expense updateExpense(
+    public ExpenseResponse updateExpense(
             Long id,
-            Expense updatedExpense,
+            ExpenseRequest request,
             Long userId) {
 
-        Expense existingExpense = getExpenseById(id, userId);
+        Expense existingExpense = expenseRepository
+                .findByIdAndUserId(id, userId)
+                .orElseThrow(() ->
+                        new ExpenseNotFoundException("Expense not found")
+                );
 
-        existingExpense.setTitle(updatedExpense.getTitle());
-        existingExpense.setAmount(updatedExpense.getAmount());
-        existingExpense.setCategory(updatedExpense.getCategory());
-        existingExpense.setDate(updatedExpense.getDate());
-        existingExpense.setDescription(updatedExpense.getDescription());
+        existingExpense.setTitle(request.getTitle());
+        existingExpense.setAmount(request.getAmount());
+        existingExpense.setCategory(request.getCategory());
+        existingExpense.setDate(request.getDate());
+        existingExpense.setDescription(request.getDescription());
 
-        return expenseRepository.save(existingExpense);
+        Expense updatedExpense = expenseRepository.save(existingExpense);
+
+        return convertToResponse(updatedExpense);
     }
 
     public void deleteExpense(Long id, Long userId) {
 
-        Expense existingExpense = getExpenseById(id, userId);
+        Expense existingExpense = expenseRepository
+                .findByIdAndUserId(id, userId)
+                .orElseThrow(() ->
+                        new ExpenseNotFoundException("Expense not found")
+                );
 
         expenseRepository.delete(existingExpense);
     }
 
-    public List<Expense> getExpensesByCategory(
+    public List<ExpenseResponse> getExpensesByCategory(
             String category,
             Long userId) {
 
-        return expenseRepository.findByCategoryIgnoreCaseAndUserId(
-                category, userId
-        );
+        return expenseRepository
+                .findByCategoryIgnoreCaseAndUserId(category, userId)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
     }
 
     public double getTotalExpenses(Long userId) {

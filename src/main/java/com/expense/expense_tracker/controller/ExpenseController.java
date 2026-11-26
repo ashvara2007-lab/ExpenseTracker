@@ -1,12 +1,16 @@
 package com.expense.expense_tracker.controller;
 
-import com.expense.expense_tracker.model.Expense;
+import com.expense.expense_tracker.dto.ExpenseRequest;
+import com.expense.expense_tracker.dto.ExpenseResponse;
 import com.expense.expense_tracker.model.User;
 import com.expense.expense_tracker.repository.UserRepository;
 import com.expense.expense_tracker.service.ExpenseService;
 
-import org.springframework.security.core.Authentication;
+import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,7 +39,8 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public List<Expense> getAllExpenses(Authentication authentication) {
+    public List<ExpenseResponse> getAllExpenses(
+            Authentication authentication) {
 
         User user = getAuthenticatedUser(authentication);
 
@@ -43,7 +48,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/{id}")
-    public Expense getExpenseById(
+    public ExpenseResponse getExpenseById(
             @PathVariable Long id,
             Authentication authentication) {
 
@@ -53,30 +58,34 @@ public class ExpenseController {
     }
 
     @PostMapping
-    public Expense createExpense(
-            @RequestBody Expense expense,
+    public ResponseEntity<ExpenseResponse> createExpense(
+            @Valid @RequestBody ExpenseRequest request,
             Authentication authentication) {
 
         User user = getAuthenticatedUser(authentication);
 
-        return expenseService.createExpense(expense, user);
+        ExpenseResponse response = expenseService.createExpense(
+                request, user
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public Expense updateExpense(
+    public ExpenseResponse updateExpense(
             @PathVariable Long id,
-            @RequestBody Expense expense,
+            @Valid @RequestBody ExpenseRequest request,
             Authentication authentication) {
 
         User user = getAuthenticatedUser(authentication);
 
         return expenseService.updateExpense(
-                id, expense, user.getId()
+                id, request, user.getId()
         );
     }
 
     @DeleteMapping("/{id}")
-    public String deleteExpense(
+    public ResponseEntity<String> deleteExpense(
             @PathVariable Long id,
             Authentication authentication) {
 
@@ -84,11 +93,11 @@ public class ExpenseController {
 
         expenseService.deleteExpense(id, user.getId());
 
-        return "Expense deleted successfully";
+        return ResponseEntity.ok("Expense deleted successfully");
     }
 
     @GetMapping("/category/{category}")
-    public List<Expense> getExpensesByCategory(
+    public List<ExpenseResponse> getExpensesByCategory(
             @PathVariable String category,
             Authentication authentication) {
 
