@@ -32,6 +32,25 @@ Java • Spring Boot • Spring Data JPA • H2 Database • Maven
 ## Database
 Uses H2 in-memory database with the H2 Console available at `/h2-console`.
 
+## Backend Improvements
+
+- **DTOs (Data Transfer Objects):** Introduced `ExpenseRequest` and `ExpenseResponse` to separate API request and response data from database entities.
+- **Validation:** Added request validation using `@Valid`, `@NotBlank`, `@NotNull`, and `@Positive`.
+- **Custom Exception Handling:** Implemented `ExpenseNotFoundException` for handling missing expenses.
+- **Global Exception Handling:** Added `GlobalExceptionHandler` using `@RestControllerAdvice` to handle validation errors and invalid request formats centrally.
+- **Improved HTTP Responses:** Updated APIs to return appropriate HTTP status codes, including `201 Created`, `400 Bad Request`, and `404 Not Found`.
+- **Refactoring:** Updated Controller and Service layers to use DTOs while preserving existing authentication and user-specific expense access.
+
+### Testing
+
+Tested using Postman:
+- Expense CRUD operations
+- Request validation
+- Invalid request formats
+- Expense not found handling
+- Category filtering and total expense calculation
+- User-specific data isolation
+
 ---
 
 Built as a hands-on project to learn REST APIs and CRUD operations with Spring Boot.
